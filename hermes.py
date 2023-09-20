@@ -102,11 +102,11 @@ window = Tk()
 window.title("Hermes [OKDF-FF]")
 window.geometry('350x370')
 
-Label(window, text="Sender name:").grid(column=0, row=0, sticky=W)
+Label(window, text="Sender's name:").grid(column=0, row=0, sticky=W)
 nameTxt = Entry(window,width=30)
 nameTxt.grid(column=1, row=0, sticky=W)
 
-Label(window, text="Sender email:").grid(column=0, row=1, sticky=W)
+Label(window, text="Sender's email:").grid(column=0, row=1, sticky=W)
 emailTxt = Entry(window,width=30)
 emailTxt.grid(column=1, row=1, sticky=W)
 
