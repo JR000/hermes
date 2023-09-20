@@ -4,7 +4,7 @@ from tkinter.filedialog import *
 from tkinter.messagebox import *
 import re
 import os
-
+import mimetypes
 
 import base64
 from email.message import EmailMessage
@@ -24,12 +24,19 @@ from googleapiclient.errors import HttpError
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+from apiclient import errors, discovery
+import mimetypes
+from email.mime.image import MIMEImage
+from email.mime.audio import MIMEAudio
+from email.mime.base import MIMEBase
 
 SCOPES = ['https://www.googleapis.com/auth/gmail.send']
 
 
 
-def send_message(creds=None, to="", fromName="", fromEmail="", subject="", msgHtml=""):
+def send_message(creds=None, to="", fromName="", fromEmail="", subject="", msgHtml="", attachments=[]):
     try:
         service = build('gmail', 'v1', credentials=creds)
         message = MIMEMultipart('alternative')
@@ -39,6 +46,20 @@ def send_message(creds=None, to="", fromName="", fromEmail="", subject="", msgHt
         message['Subject'] = subject
 
         message.attach(MIMEText(msgHtml, 'html'))   
+
+
+        for attachmentFile in attachments:
+            content_type, encoding = mimetypes.guess_type(attachmentFile)
+
+            if content_type is None or encoding is not None:
+                content_type = 'application/octet-stream'
+            main_type, sub_type = content_type.split('/', 1)
+            with open(attachmentFile, 'rb') as fp:
+                msg = MIMEBase(main_type, sub_type)
+                msg.set_payload(fp.read())
+            filename = os.path.basename(attachmentFile)
+            msg.add_header('Content-Disposition', 'attachment', filename=filename)
+            message.attach(msg)
 
 
         encoded_message = base64.urlsafe_b64encode(message.as_bytes()) \
@@ -55,7 +76,8 @@ def send_message(creds=None, to="", fromName="", fromEmail="", subject="", msgHt
         send_message = None
     return send_message
 
-def send_messages(emails=[], fromName="", fromEmail="", subject="", msgHtml=""):
+def send_messages(emails=[], fromName="", fromEmail="", subject="", msgHtml="", attachments=[]):
+    creds = None
     if os.path.exists('token.json'):
         creds = Credentials.from_authorized_user_file('token.json', SCOPES)
     if not creds or not creds.valid:
@@ -70,7 +92,7 @@ def send_messages(emails=[], fromName="", fromEmail="", subject="", msgHtml=""):
             token.write(creds.to_json())
 
     for email in emails:
-        send_message(creds, to=email, fromName=fromName, fromEmail=fromEmail, subject=subject, msgHtml=msgHtml)
+        send_message(creds, to=email, fromName=fromName, fromEmail=fromEmail, subject=subject, msgHtml=msgHtml, attachments=attachments)
 
     
 
@@ -159,9 +181,9 @@ def send_email():
         return
 
     msgHtml = ""
-    with open(htmlFileStr.get()) as file:
+    with open(htmlFileStr.get(), encoding='utf-8') as file:
         msgHtml = file.read()
-    send_messages(emails=emails, fromName=nameTxt.get(), fromEmail=emailTxt.get(), subject=subjectTxt.get(), msgHtml=msgHtml)
+    send_messages(emails=emails, fromName=nameTxt.get(), fromEmail=emailTxt.get(), subject=subjectTxt.get(), msgHtml=msgHtml, attachments=attachments)
 
 Button(text="Send emails", command=send_email).grid(column=0, row=9, columnspan=3)
 
